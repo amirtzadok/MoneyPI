@@ -1,7 +1,8 @@
 const BASE = 'https://www.googleapis.com'
 
 export class DriveClient {
-  constructor(private token: string) {}
+  private token: string
+  constructor(token: string) { this.token = token }
 
   private headers(): Record<string, string> {
     return {

@@ -1,10 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { DriveClient } from './driveClient'
-import {
-  APP_FOLDER_NAME, AppConfig, MerchantMappings, CashEntry,
-  CONFIG_FILE, MAPPINGS_FILE, CASH_FILE,
-} from './types'
+import type { AppConfig, MerchantMappings, CashEntry } from './types'
+import { APP_FOLDER_NAME, CONFIG_FILE, MAPPINGS_FILE, CASH_FILE } from './types'
 
 export function useDrive() {
   const { accessToken } = useAuth()
