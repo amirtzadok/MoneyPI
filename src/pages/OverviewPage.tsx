@@ -43,16 +43,8 @@ function BudgetBar({ category, spent, budget }: { category: string; spent: numbe
 export function OverviewPage({ appData }: { appData: AppData }) {
   const { monthData, config } = appData
 
-  if (!monthData) {
-    return (
-      <div className="text-center text-slate-500 mt-20">
-        <p className="text-4xl mb-4">📊</p>
-        <p>בחר חודש ולחץ "טען נתונים"</p>
-      </div>
-    )
-  }
-
-  const summary = useMemo(() => computeSummary(monthData.transactions), [monthData])
+  // Hooks MUST be called before any early returns
+  const summary = useMemo(() => computeSummary(monthData?.transactions ?? []), [monthData])
 
   const pieData = useMemo(() =>
     Object.entries(summary.byCategory)
@@ -64,6 +56,16 @@ export function OverviewPage({ appData }: { appData: AppData }) {
   )
 
   const budgetCategories = Object.entries(config.budgets).filter(([, v]) => v > 0)
+
+  // Early return AFTER all hooks
+  if (!monthData) {
+    return (
+      <div className="text-center text-slate-500 mt-20">
+        <p className="text-4xl mb-4">📊</p>
+        <p>בחר חודש ולחץ "טען נתונים"</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
