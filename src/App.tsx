@@ -8,7 +8,7 @@ import { MonthSelector } from './components/MonthSelector'
 import type { MonthFolder, MonthData } from './drive/types'
 
 export default function App() {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, logout } = useAuth()
   const { ensureAppFolder, error: driveError, readMappings } = useDrive()
   const { listMonthFolders, loadMonthData, loading: dataLoading } = useMonthData()
   const [driveReady, setDriveReady] = useState(false)
@@ -61,7 +61,8 @@ export default function App() {
         />
         <div className="flex items-center gap-2 text-sm text-slate-400">
           <img src={user?.picture} className="w-7 h-7 rounded-full" alt="" />
-          {user?.name}
+          <span>{user?.name}</span>
+          <button onClick={logout} className="text-xs text-slate-600 hover:text-slate-300 mr-1">התנתק</button>
         </div>
       </div>
 
