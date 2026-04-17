@@ -5,7 +5,7 @@ export function GoogleAuthButton() {
   const { isLoggedIn, user, logout, setCredential } = useAuth()
 
   const login = useGoogleLogin({
-    scope: 'https://www.googleapis.com/auth/drive.file profile email',
+    scope: 'https://www.googleapis.com/auth/drive profile email',
     onSuccess: async (tokenResponse) => {
       const res = await fetch(
         'https://www.googleapis.com/oauth2/v3/userinfo',
