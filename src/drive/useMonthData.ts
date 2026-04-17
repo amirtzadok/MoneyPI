@@ -65,6 +65,24 @@ export function useMonthData() {
       const files = await client.listFiles(folder.id)
       const transactions: Transaction[] = []
 
+      // Prefer pre-parsed transactions.json if present (uploaded by seed script)
+      const preBuilt = files.find(f => f.name === 'transactions.json')
+      if (preBuilt) {
+        const res = await fetch(
+          `https://www.googleapis.com/drive/v3/files/${preBuilt.id}?alt=media`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        )
+        if (res.ok) {
+          const data: Transaction[] = await res.json()
+          return {
+            folder,
+            transactions: data.sort((a, b) => b.date.localeCompare(a.date)),
+            loadedAt: new Date().toISOString(),
+          }
+        }
+      }
+
+      // Otherwise parse raw bank export files
       for (const file of files) {
         const fileType = detectFileType(file.name, new ArrayBuffer(0))
         if (fileType === 'unknown') continue

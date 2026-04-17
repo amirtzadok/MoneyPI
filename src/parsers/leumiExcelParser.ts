@@ -2,15 +2,14 @@ import * as XLSX from 'xlsx'
 import { categorize } from './categorizer'
 import type { Transaction } from './types'
 
-// Column indices in the xlsx (0-based), row 4 is header
+// Real column layout (0-based), headers at row 3, data from row 4
 const COL = {
-  DATE: 0,           // תאריך עסקה
-  MERCHANT: 2,       // שם בית עסק
-  AMOUNT: 3,         // סכום עסקה
-  INSTALLMENTS_TOTAL: 7,   // מספר תשלומים
-  INSTALLMENTS_CURRENT: 8, // תשלום מספר
-  TRANSACTION_TYPE: 9,     // סוג עסקה
-  CARD: 12,          // מספר כרטיס
+  DATE: 0,              // תאריך עסקה        DD-MM-YYYY
+  MERCHANT: 1,          // שם בית העסק
+  CARD: 3,              // 4 ספרות אחרונות
+  TRANSACTION_TYPE: 4,  // סוג עסקה (רגילה / תשלומים / קרדיט)
+  AMOUNT: 5,            // סכום חיוב
+  NOTES: 10,            // הערות — contains "תשלום 1 מתוך 12" for installments
 }
 
 function parseDate(raw: string): string {
@@ -18,6 +17,13 @@ function parseDate(raw: string): string {
   const parts = String(raw).split('-')
   if (parts.length !== 3) return raw
   return `${parts[2]}-${parts[1]}-${parts[0]}`
+}
+
+// Parse "תשלום 1 מתוך 12" → { current: 1, total: 12 }
+function parseInstallments(notes: string): { current: number; total: number } | undefined {
+  const m = notes.match(/תשלום\s+(\d+)\s+מתוך\s+(\d+)/)
+  if (!m) return undefined
+  return { current: parseInt(m[1]), total: parseInt(m[2]) }
 }
 
 function generateId(t: Partial<Transaction>): string {
@@ -36,8 +42,8 @@ export function parseLeumiExcel(
     raw: false,
   }) as string[][]
 
-  // Skip first 4 rows (metadata), row 4 is headers, data starts at row 5
-  const dataRows = rows.slice(5)
+  // Rows 0-2: metadata, row 3: headers, data starts at row 4
+  const dataRows = rows.slice(4)
 
   const transactions: Transaction[] = []
 
@@ -49,16 +55,13 @@ export function parseLeumiExcel(
     const amount = parseFloat(rawAmount) || 0
     if (amount === 0) continue
 
-    const totalStr = String(row[COL.INSTALLMENTS_TOTAL] ?? '1')
-    const currentStr = String(row[COL.INSTALLMENTS_CURRENT] ?? '1')
-    const total = parseInt(totalStr) || 1
-    const current = parseInt(currentStr) || 1
-
     const txType = String(row[COL.TRANSACTION_TYPE] ?? '').trim()
-    const paymentType = txType.includes('תשלומים') ? 'credit'
-      : txType.includes('הוראת קבע') ? 'standing_order'
-      : txType.includes('זיכוי') ? 'refund'
+    const paymentType = txType === 'תשלומים' ? 'credit'
+      : txType === 'קרדיט' ? 'refund'
+      : txType === 'חיוב עסקות מיידי' ? 'debit'
       : 'credit'
+
+    const installments = parseInstallments(String(row[COL.NOTES] ?? ''))
 
     const t: Transaction = {
       id: '',
@@ -70,7 +73,7 @@ export function parseLeumiExcel(
       cardNumber: String(row[COL.CARD] ?? '').trim(),
       paymentType,
       source: 'leumi_excel',
-      ...(total > 1 ? { installments: { current, total } } : {}),
+      ...(installments ? { installments } : {}),
     }
     t.id = generateId(t)
     transactions.push(t)
