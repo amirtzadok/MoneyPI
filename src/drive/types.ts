@@ -19,3 +19,16 @@ export const APP_FOLDER_NAME = 'MoneyPI'
 export const CONFIG_FILE = 'config.json'
 export const MAPPINGS_FILE = 'mappings.json'
 export const CASH_FILE = 'cash-entries.json'
+
+export interface MonthFolder {
+  id: string
+  name: string       // e.g. "April 2026"
+  month: number      // 1–12
+  year: number
+}
+
+export interface MonthData {
+  folder: MonthFolder
+  transactions: import('../parsers/types').Transaction[]
+  loadedAt: string   // ISO timestamp
+}
