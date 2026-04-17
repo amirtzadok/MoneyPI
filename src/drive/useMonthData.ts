@@ -8,7 +8,7 @@ import type { Transaction } from '../parsers/types'
 import type { MonthFolder, MonthData, MerchantMappings } from './types'
 
 const EXPENSES_ROOT = 'Expenses'
-const EXPENSES_YEAR = 'Expenses 2026'
+const YEAR_FOLDERS = ['Expenses 2025', 'Expenses 2026']
 
 const MONTH_MAP: Record<string, number> = {
   january: 1, february: 2, march: 3, april: 4,
@@ -39,19 +39,24 @@ export function useMonthData() {
 
   const listMonthFolders = useCallback(async (): Promise<MonthFolder[]> => {
     const client = getClient()
-    // Navigate: root → Expenses → Expenses 2026
+    // Navigate: Expenses → Expenses 2025 + Expenses 2026 → collect all month folders
     const expensesId = await client.ensureFolder(EXPENSES_ROOT)
-    const expenses2026Id = await client.ensureFolder(EXPENSES_YEAR, expensesId)
-    const files = await client.listFiles(expenses2026Id)
+    const allFolders: MonthFolder[] = []
 
-    return files
-      .map(f => {
-        const parsed = parseFolderName(f.name)
-        if (!parsed) return null
-        return { id: f.id, name: f.name, ...parsed } as MonthFolder
-      })
-      .filter((f): f is MonthFolder => f !== null)
-      .sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
+    for (const yearFolderName of YEAR_FOLDERS) {
+      try {
+        const yearFolderId = await client.ensureFolder(yearFolderName, expensesId)
+        const files = await client.listFiles(yearFolderId)
+        for (const f of files) {
+          const parsed = parseFolderName(f.name)
+          if (parsed) allFolders.push({ id: f.id, name: f.name, ...parsed })
+        }
+      } catch {
+        // Year folder may not exist yet — skip
+      }
+    }
+
+    return allFolders.sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
   }, [getClient])
 
   const loadMonthData = useCallback(async (
