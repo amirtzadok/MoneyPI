@@ -222,14 +222,14 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
                     )}
                   </td>
                   <td className="p-3"><CategoryBadge category={t.category} /></td>
-                  <td className="p-3 text-slate-500 text-xs">{PAYMENT_TYPE_LABELS[t.paymentType] ?? t.paymentType}</td>
-                  <td className="p-3 text-slate-500 text-xs">
+                  <td className="p-3 text-white text-xs">{PAYMENT_TYPE_LABELS[t.paymentType] ?? t.paymentType}</td>
+                  <td className="p-3 text-white text-xs">
                     {t.installments ? `${t.installments.current}/${t.installments.total}` : '—'}
                   </td>
                   <td className={`p-3 font-bold ${t.amount < 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {formatCurrency(t.amount)}
                   </td>
-                  <td className="p-3 text-slate-500">{t.cardNumber}</td>
+                  <td className="p-3 text-white">{t.cardNumber}</td>
                 </tr>
               ))}
             </tbody>
