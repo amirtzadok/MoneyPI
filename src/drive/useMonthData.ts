@@ -112,9 +112,14 @@ export function useMonthData() {
         // discount_pdf: fee entries only, skip for now
       }
 
+      const filtered = transactions.filter(t => {
+        const [y, m] = t.date.split('-').map(Number)
+        return y === folder.year && m === folder.month
+      })
+
       return {
         folder,
-        transactions: transactions.sort((a, b) => b.date.localeCompare(a.date)),
+        transactions: filtered.sort((a, b) => b.date.localeCompare(a.date)),
         loadedAt: new Date().toISOString(),
       }
     } catch (e) {
