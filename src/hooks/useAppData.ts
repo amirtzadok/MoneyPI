@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useDrive } from '../drive/useDrive'
 import { useMonthData } from '../drive/useMonthData'
+import { useAuth } from '../auth/useAuth'
 import type { AppConfig, MerchantMappings, CashEntry, MonthFolder, MonthData } from '../drive/types'
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -9,6 +10,7 @@ const DEFAULT_CONFIG: AppConfig = {
 }
 
 export function useAppData() {
+  const { logout } = useAuth()
   const {
     ensureAppFolder, readConfig, writeConfig,
     readMappings, writeMappings,
@@ -50,10 +52,11 @@ export function useAppData() {
       }
       setInitialized(true)
     } catch (e) {
+      if (String(e).includes('TOKEN_EXPIRED')) { logout(); return }
       setError(String(e))
       setInitialized(true)
     }
-  }, [ensureAppFolder, readConfig, readMappings, readCashEntries, listMonthFolders, loadMonthData])
+  }, [ensureAppFolder, readConfig, readMappings, readCashEntries, listMonthFolders, loadMonthData, logout])
 
   const loadMonth = useCallback(async (folder?: MonthFolder) => {
     const target = folder ?? selectedFolder

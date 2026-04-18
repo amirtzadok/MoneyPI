@@ -17,6 +17,7 @@ export class DriveClient {
       `${BASE}/drive/v3/files?q=${q}&fields=files(id,name,mimeType)`,
       { headers: this.headers() }
     )
+    if (res.status === 401) throw new Error('TOKEN_EXPIRED')
     if (!res.ok) throw new Error(`Drive list failed: ${res.status}`)
     const data = await res.json()
     return data.files ?? []
