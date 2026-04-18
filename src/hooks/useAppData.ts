@@ -41,7 +41,10 @@ export function useAppData() {
       setCashEntries(cash)
       setFolders(fols)
       if (fols.length > 0) {
-        const lastFolder = fols[fols.length - 1]
+        const now = new Date()
+        const prevMonth = now.getMonth() === 0 ? 12 : now.getMonth()
+        const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+        const lastFolder = fols.find(f => f.month === prevMonth && f.year === prevYear) ?? fols[fols.length - 1]
         setSelectedFolder(lastFolder)
         try {
           const data = await loadMonthData(lastFolder, map)
