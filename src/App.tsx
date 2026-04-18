@@ -10,6 +10,7 @@ import { TransactionsPage } from './pages/TransactionsPage'
 import { BudgetPage } from './pages/BudgetPage'
 import { CashPage } from './pages/CashPage'
 import { InsightsPage } from './pages/InsightsPage'
+import { FloatingChat } from './components/FloatingChat'
 import type { Tab } from './components/Nav'
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
         {tab === 'cash' && <CashPage appData={appData} />}
         {tab === 'insights' && <InsightsPage appData={appData} />}
       </div>
+      <FloatingChat appData={appData} />
     </div>
   )
 }
