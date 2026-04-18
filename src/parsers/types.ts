@@ -9,7 +9,7 @@ export const CATEGORIES = [
 export type Category = typeof CATEGORIES[number]
 
 export type PaymentType = 'credit' | 'debit' | 'standing_order' | 'cash' | 'refund'
-export type DataSource = 'leumi_excel' | 'leumi_html' | 'discount_pdf' | 'manual_cash'
+export type DataSource = 'leumi_excel' | 'leumi_html' | 'discount_excel' | 'discount_pdf' | 'manual_cash'
 
 export interface Transaction {
   id: string

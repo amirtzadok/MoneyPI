@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { DriveClient } from './driveClient'
 import { parseLeumiExcel } from '../parsers/leumiExcelParser'
 import { parseLeumiHtml } from '../parsers/leumiHtmlParser'
+import { parseDiscountExcel } from '../parsers/discountExcelParser'
 import { detectFileType } from '../parsers/fileDetector'
 import type { Transaction } from '../parsers/types'
 import type { MonthFolder, MonthData, MerchantMappings } from './types'
@@ -104,6 +105,9 @@ export function useMonthData() {
         } else if (fileType === 'leumi_html') {
           const text = await res.text()
           transactions.push(...parseLeumiHtml(text, mappings))
+        } else if (fileType === 'discount_excel') {
+          const buffer = await res.arrayBuffer()
+          transactions.push(...parseDiscountExcel(buffer, mappings))
         }
         // discount_pdf: fee entries only, skip for now
       }
