@@ -16,12 +16,6 @@ export default function App() {
   const { isLoggedIn, user, logout } = useAuth()
   const appData = useAppData()
   const [tab, setTab] = useState<Tab>('overview')
-  const [forcedCategory, setForcedCategory] = useState<string | null>(null)
-
-  function goToCategory(cat: string) {
-    setForcedCategory(cat)
-    setTab('transactions')
-  }
 
   useEffect(() => {
     if (isLoggedIn) appData.initialize()
@@ -61,8 +55,8 @@ export default function App() {
             שגיאה: {appData.error}
           </div>
         )}
-        {tab === 'overview' && <OverviewPage appData={appData} onCategoryClick={goToCategory} />}
-        {tab === 'transactions' && <TransactionsPage appData={appData} forcedCategory={forcedCategory} onForcedCategoryConsumed={() => setForcedCategory(null)} />}
+        {tab === 'overview' && <OverviewPage appData={appData} />}
+        {tab === 'transactions' && <TransactionsPage appData={appData} />}
         {tab === 'budget' && <BudgetPage appData={appData} />}
         {tab === 'cash' && <CashPage appData={appData} />}
         {tab === 'insights' && <InsightsPage appData={appData} />}

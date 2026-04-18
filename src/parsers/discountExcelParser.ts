@@ -60,7 +60,7 @@ export function parseDiscountExcel(
       rawDescription: description,
       amount,
       category: categorize(description, mappings) as Transaction['category'],
-      cardNumber: 'account',
+      cardNumber: 'discount',
       paymentType,
       source: 'discount_excel',
     }

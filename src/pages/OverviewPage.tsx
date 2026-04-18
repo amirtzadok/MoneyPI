@@ -1,11 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { computeSummary } from '../utils/summary'
-import { formatCurrency, CATEGORY_COLORS } from '../utils/formatters'
+import { formatCurrency, formatDate, CATEGORY_COLORS } from '../utils/formatters'
 import { CategoryBadge } from '../components/CategoryBadge'
 import type { useAppData } from '../hooks/useAppData'
 type AppData = ReturnType<typeof useAppData>
-type OverviewProps = { appData: AppData; onCategoryClick?: (cat: string) => void }
 
 interface SummaryCardProps {
   label: string
@@ -41,10 +40,10 @@ function BudgetBar({ category, spent, budget }: { category: string; spent: numbe
   )
 }
 
-export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
+export function OverviewPage({ appData }: { appData: AppData }) {
   const { monthData, config } = appData
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
-  // Hooks MUST be called before any early returns
   const summary = useMemo(() => computeSummary(monthData?.transactions ?? []), [monthData])
 
   const pieData = useMemo(() =>
@@ -58,7 +57,11 @@ export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
 
   const budgetCategories = Object.entries(config.budgets).filter(([, v]) => v > 0)
 
-  // Early return AFTER all hooks
+  const categoryTransactions = useMemo(() => {
+    if (!selectedCategory || !monthData) return []
+    return monthData.transactions.filter(t => t.category === selectedCategory)
+  }, [selectedCategory, monthData])
+
   if (!monthData) {
     return (
       <div className="text-center text-white mt-20">
@@ -72,27 +75,10 @@ export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard
-          label="סה״כ הוצאות"
-          value={formatCurrency(summary.totalExpense)}
-          color="text-red-400"
-        />
-        <SummaryCard
-          label="סה״כ זיכויים"
-          value={formatCurrency(summary.totalIncome)}
-          color="text-green-400"
-        />
-        <SummaryCard
-          label="נטו"
-          value={formatCurrency(summary.totalExpense - summary.totalIncome)}
-          color="text-slate-200"
-        />
-        <SummaryCard
-          label="חוב תשלומים עתידי"
-          value={formatCurrency(summary.installmentsDebt)}
-          sub="סה״כ תשלומים שנותרו"
-          color="text-yellow-400"
-        />
+        <SummaryCard label="סה״כ הוצאות" value={formatCurrency(summary.totalExpense)} color="text-red-400" />
+        <SummaryCard label="סה״כ זיכויים" value={formatCurrency(summary.totalIncome)} color="text-green-400" />
+        <SummaryCard label="נטו" value={formatCurrency(summary.totalExpense - summary.totalIncome)} color="text-slate-200" />
+        <SummaryCard label="חוב תשלומים עתידי" value={formatCurrency(summary.installmentsDebt)} sub="סה״כ תשלומים שנותרו" color="text-yellow-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -109,11 +95,19 @@ export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
                 outerRadius={110}
                 paddingAngle={2}
                 dataKey="value"
-                onClick={(entry) => entry?.name && onCategoryClick?.(entry.name)}
-                style={{ cursor: onCategoryClick ? 'pointer' : 'default' }}
+                onClick={(entry) => {
+                  if (!entry?.name) return
+                  const name = entry.name as string
+                  setSelectedCategory(prev => prev === name ? null : name)
+                }}
+                style={{ cursor: 'pointer' }}
               >
                 {pieData.map(entry => (
-                  <Cell key={entry.name} fill={CATEGORY_COLORS[entry.name] ?? '#374151'} />
+                  <Cell
+                    key={entry.name}
+                    fill={CATEGORY_COLORS[entry.name] ?? '#374151'}
+                    opacity={selectedCategory && selectedCategory !== entry.name ? 0.35 : 1}
+                  />
                 ))}
               </Pie>
               <Tooltip
@@ -122,25 +116,63 @@ export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
                 labelStyle={{ color: '#e2e8f0' }}
               />
               <Legend
-                formatter={(value) => <span style={{ color: '#94a3b8', fontSize: 12 }}>{value}</span>}
+                formatter={(value) => (
+                  <span style={{ color: selectedCategory && selectedCategory !== value ? '#4b5563' : '#94a3b8', fontSize: 12 }}>
+                    {value}
+                  </span>
+                )}
               />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Top spending */}
+        {/* Right panel: category transactions or totals list */}
         <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5">
-          <h2 className="text-slate-300 font-semibold mb-4">הוצאות לפי קטגוריה</h2>
-          <div className="space-y-2 max-h-72 overflow-y-auto">
-            {Object.entries(summary.byCategory)
-              .sort(([, a], [, b]) => b - a)
-              .map(([cat, amount]) => (
-                <div key={cat} className="flex justify-between items-center py-1 border-b border-[#2d3148]">
-                  <CategoryBadge category={cat} />
-                  <span className="text-red-400 font-medium text-sm">{formatCurrency(amount)}</span>
+          {selectedCategory ? (
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <CategoryBadge category={selectedCategory} />
+                  <span className="text-red-400 font-bold text-sm mr-2">
+                    {formatCurrency(summary.byCategory[selectedCategory] ?? 0)}
+                  </span>
                 </div>
-              ))}
-          </div>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="text-white hover:text-slate-300 text-lg leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-1 max-h-72 overflow-y-auto">
+                {categoryTransactions.map(t => (
+                  <div key={t.id} className="flex justify-between items-center py-1.5 border-b border-[#2d3148] text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-white">{t.description}</span>
+                      <span className="text-slate-500 text-xs">{formatDate(t.date)}</span>
+                    </div>
+                    <span className={`font-medium ${t.amount < 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatCurrency(t.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-slate-300 font-semibold mb-4">הוצאות לפי קטגוריה</h2>
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {Object.entries(summary.byCategory)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([cat, amount]) => (
+                    <div key={cat} className="flex justify-between items-center py-1 border-b border-[#2d3148]">
+                      <CategoryBadge category={cat} />
+                      <span className="text-red-400 font-medium text-sm">{formatCurrency(amount)}</span>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -149,12 +181,7 @@ export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
         <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5">
           <h2 className="text-slate-300 font-semibold mb-4">מעקב תקציב</h2>
           {budgetCategories.map(([cat, budget]) => (
-            <BudgetBar
-              key={cat}
-              category={cat}
-              spent={summary.byCategory[cat] ?? 0}
-              budget={budget}
-            />
+            <BudgetBar key={cat} category={cat} spent={summary.byCategory[cat] ?? 0} budget={budget} />
           ))}
         </div>
       )}
