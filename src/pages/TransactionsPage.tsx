@@ -74,7 +74,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Search */}
         <div className="mb-4">
-          <label className="text-slate-500 text-xs mb-1 block">חיפוש עסק</label>
+          <label className="text-slate-400 text-xs mb-1 block">חיפוש עסק</label>
           <input
             type="text"
             value={search}
