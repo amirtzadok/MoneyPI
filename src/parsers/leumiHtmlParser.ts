@@ -23,12 +23,16 @@ export function parseLeumiHtml(
   // Parse HTML in browser using DOMParser
   const parser = new DOMParser()
   const doc = parser.parseFromString(htmlContent, 'text/html')
-  const rows = Array.from(doc.querySelectorAll('table tr'))
+  // Collect data rows from ALL tables (handles multi-tab .xls files)
+  const allRows: Element[] = []
+  doc.querySelectorAll('table').forEach(table => {
+    const tableRows = Array.from(table.querySelectorAll('tr'))
+    allRows.push(...tableRows.slice(1)) // skip header row of each table
+  })
 
   const transactions: Transaction[] = []
 
-  // Skip header row (index 0)
-  for (const row of rows.slice(1)) {
+  for (const row of allRows) {
     const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent?.trim() ?? '')
     if (cells.length < 5) continue
 

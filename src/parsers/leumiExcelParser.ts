@@ -30,21 +30,17 @@ function generateId(t: Partial<Transaction>): string {
   return `${t.date}-${t.cardNumber}-${t.amount}-${t.rawDescription}`.replace(/\s/g, '_')
 }
 
-export function parseLeumiExcel(
-  buffer: ArrayBuffer | number[],
-  mappings: Record<string, string> = {}
+function parseSheet(
+  ws: XLSX.WorkSheet,
+  mappings: Record<string, string>
 ): Transaction[] {
-  const wb = XLSX.read(buffer, { type: 'array' })
-  const ws = wb.Sheets[wb.SheetNames[0]]
   const rows: string[][] = XLSX.utils.sheet_to_json(ws, {
     header: 1,
     defval: '',
     raw: false,
   }) as string[][]
 
-  // Rows 0-2: metadata, row 3: headers, data starts at row 4
-  const dataRows = rows.slice(4)
-
+  const dataRows = rows.slice(4) // rows 0-2: metadata, row 3: headers
   const transactions: Transaction[] = []
 
   for (const row of dataRows) {
@@ -80,4 +76,18 @@ export function parseLeumiExcel(
   }
 
   return transactions
+}
+
+export function parseLeumiExcel(
+  buffer: ArrayBuffer | number[],
+  mappings: Record<string, string> = {}
+): Transaction[] {
+  const wb = XLSX.read(buffer, { type: 'array' })
+  const allTransactions: Transaction[] = []
+
+  for (const sheetName of wb.SheetNames) {
+    allTransactions.push(...parseSheet(wb.Sheets[sheetName], mappings))
+  }
+
+  return allTransactions
 }

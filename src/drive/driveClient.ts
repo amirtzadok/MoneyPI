@@ -11,7 +11,7 @@ export class DriveClient {
     }
   }
 
-  async listFiles(parentId: string): Promise<{ id: string; name: string }[]> {
+  async listFiles(parentId: string): Promise<{ id: string; name: string; mimeType: string }[]> {
     const q = encodeURIComponent(`'${parentId}' in parents and trashed = false`)
     const res = await fetch(
       `${BASE}/drive/v3/files?q=${q}&fields=files(id,name,mimeType)`,

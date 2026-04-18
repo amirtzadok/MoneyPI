@@ -60,6 +60,34 @@ export function useMonthData() {
     return allFolders.sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month)
   }, [getClient])
 
+  const parseFiles = useCallback(async (
+    fileList: { id: string; name: string; mimeType?: string }[],
+    mappings: MerchantMappings,
+    skipFolders = true
+  ): Promise<Transaction[]> => {
+    const transactions: Transaction[] = []
+    for (const file of fileList) {
+      if (skipFolders && file.mimeType === 'application/vnd.google-apps.folder') continue
+      const fileType = detectFileType(file.name, new ArrayBuffer(0))
+      if (fileType === 'unknown') continue
+
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+      if (!res.ok) continue
+
+      if (fileType === 'leumi_excel') {
+        transactions.push(...parseLeumiExcel(await res.arrayBuffer(), mappings))
+      } else if (fileType === 'leumi_html') {
+        transactions.push(...parseLeumiHtml(await res.text(), mappings))
+      } else if (fileType === 'discount_excel') {
+        transactions.push(...parseDiscountExcel(await res.arrayBuffer(), mappings))
+      }
+    }
+    return transactions
+  }, [getClient, accessToken])
+
   const loadMonthData = useCallback(async (
     folder: MonthFolder,
     mappings: MerchantMappings = {}
@@ -69,9 +97,8 @@ export function useMonthData() {
     try {
       const client = getClient()
       const files = await client.listFiles(folder.id)
-      const transactions: Transaction[] = []
 
-      // Prefer pre-parsed transactions.json if present (uploaded by seed script)
+      // Prefer pre-parsed transactions.json if present
       const preBuilt = files.find(f => f.name === 'transactions.json')
       if (preBuilt) {
         const res = await fetch(
@@ -88,38 +115,38 @@ export function useMonthData() {
         }
       }
 
-      // Otherwise parse raw bank export files
-      for (const file of files) {
-        const fileType = detectFileType(file.name, new ArrayBuffer(0))
-        if (fileType === 'unknown') continue
+      // Parse files in the month subfolder
+      const transactions = await parseFiles(files, mappings)
 
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        )
-        if (!res.ok) continue
-
-        if (fileType === 'leumi_excel') {
-          const buffer = await res.arrayBuffer()
-          transactions.push(...parseLeumiExcel(buffer, mappings))
-        } else if (fileType === 'leumi_html') {
-          const text = await res.text()
-          transactions.push(...parseLeumiHtml(text, mappings))
-        } else if (fileType === 'discount_excel') {
-          const buffer = await res.arrayBuffer()
-          transactions.push(...parseDiscountExcel(buffer, mappings))
+      // Also parse period summary files from the year folder root
+      const expensesId = await client.ensureFolder(EXPENSES_ROOT)
+      for (const yearFolderName of YEAR_FOLDERS) {
+        try {
+          const yearFolderId = await client.ensureFolder(yearFolderName, expensesId)
+          const yearRootFiles = await client.listFiles(yearFolderId)
+          const rootFiles = yearRootFiles.filter(f => f.mimeType !== 'application/vnd.google-apps.folder')
+          transactions.push(...await parseFiles(rootFiles, mappings, false))
+        } catch {
+          // year folder missing — skip
         }
-        // discount_pdf: fee entries only, skip for now
       }
 
+      // Filter to current month, then deduplicate by ID
       const filtered = transactions.filter(t => {
         const [y, m] = t.date.split('-').map(Number)
         return y === folder.year && m === folder.month
       })
 
+      const seen = new Set<string>()
+      const deduped = filtered.filter(t => {
+        if (seen.has(t.id)) return false
+        seen.add(t.id)
+        return true
+      })
+
       return {
         folder,
-        transactions: filtered.sort((a, b) => b.date.localeCompare(a.date)),
+        transactions: deduped.sort((a, b) => b.date.localeCompare(a.date)),
         loadedAt: new Date().toISOString(),
       }
     } catch (e) {
@@ -128,7 +155,7 @@ export function useMonthData() {
     } finally {
       setLoading(false)
     }
-  }, [getClient, accessToken])
+  }, [getClient, accessToken, parseFiles])
 
   return { loading, error, listMonthFolders, loadMonthData }
 }
