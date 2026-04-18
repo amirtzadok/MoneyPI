@@ -1,62 +1,82 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { computeSummary } from '../utils/summary'
-import { formatCurrency } from '../utils/formatters'
 import type { useAppData } from '../hooks/useAppData'
 type AppData = ReturnType<typeof useAppData>
 
-function buildPrompt(appData: AppData): string {
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+function buildSystemPrompt(appData: AppData): string {
   const { monthData, config, cashEntries } = appData
   if (!monthData) return ''
 
   const summary = computeSummary(monthData.transactions)
-  const topCategories = Object.entries(summary.byCategory)
+
+  const allCategories = Object.entries(summary.byCategory)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 10)
-    .map(([cat, amount]) => `${cat}: ₪${amount.toFixed(0)}`)
+    .map(([cat, amount]) => `  ${cat}: ₪${amount.toFixed(2)}`)
     .join('\n')
 
-  const budgetAlerts = Object.entries(config.budgets)
-    .filter(([cat, budget]) => {
-      const spent = summary.byCategory[cat] ?? 0
-      return spent > budget * 0.8
-    })
+  const transactions = monthData.transactions
+    .slice(0, 200)
+    .map(t => `  ${t.date} | ${t.description} | ${t.category} | ₪${t.amount.toFixed(2)} | כרטיס: ${t.cardNumber}`)
+    .join('\n')
+
+  const budgetLines = Object.entries(config.budgets)
+    .filter(([, v]) => v > 0)
     .map(([cat, budget]) => {
       const spent = summary.byCategory[cat] ?? 0
       const pct = Math.round((spent / budget) * 100)
-      return `${cat}: ${pct}% מהתקציב (₪${spent.toFixed(0)} מתוך ₪${budget})`
-    })
+      return `  ${cat}: הוצאה ₪${spent.toFixed(0)} מתוך תקציב ₪${budget} (${pct}%)`
+    }).join('\n')
 
   const cashTotal = cashEntries.reduce((s, e) => s + e.amount, 0)
 
-  return `אתה יועץ פיננסי למשפחה ישראלית. נתח את נתוני ההוצאות הבאים ותן תובנות בעברית.
+  return `אתה יועץ פיננסי אישי למשפחה ישראלית. יש לך גישה לנתוני ההוצאות המלאים של החודש.
+ענה תמיד בעברית. היה ספציפי עם מספרים. תן עצות מעשיות וישירות.
 
-חודש: ${monthData.folder.name}
-סה"כ הוצאות: ₪${summary.totalExpense.toFixed(0)}
-סה"כ זיכויים: ₪${summary.totalIncome.toFixed(0)}
-נטו: ₪${(summary.totalExpense - summary.totalIncome).toFixed(0)}
-חוב תשלומים עתידי: ₪${summary.installmentsDebt.toFixed(0)}
-הוצאות מזומן: ₪${cashTotal.toFixed(0)}
-מספר עסקאות: ${summary.transactionCount}
+=== נתוני ${monthData.folder.name} ===
+
+סיכום:
+  סה"כ הוצאות: ₪${summary.totalExpense.toFixed(2)}
+  סה"כ זיכויים/הכנסות: ₪${summary.totalIncome.toFixed(2)}
+  נטו: ₪${(summary.totalExpense - summary.totalIncome).toFixed(2)}
+  חוב תשלומים עתידי: ₪${summary.installmentsDebt.toFixed(2)}
+  הוצאות מזומן: ₪${cashTotal.toFixed(2)}
+  מספר עסקאות: ${summary.transactionCount}
 
 הוצאות לפי קטגוריה:
-${topCategories}
+${allCategories}
 
-${budgetAlerts.length > 0 ? `התראות תקציב:\n${budgetAlerts.join('\n')}` : 'אין חריגות תקציב.'}
+${budgetLines ? `תקציב:\n${budgetLines}` : ''}
 
-אנא ספק:
-1. סיכום קצר (2-3 משפטים) של חודש ההוצאות
-2. 3-4 תובנות ספציפיות (דפוסי הוצאה, אנומליות, השוואה לצפוי)
-3. 2-3 המלצות קונקרטיות לחיסכון
-4. הערכה כללית של הבריאות הפיננסית החודשית`
+רשימת עסקאות מלאה:
+${transactions}
+`
 }
+
+const QUICK_QUESTIONS = [
+  'נתח את החודש שלי',
+  'כמה הוצאתי על ביטוחים?',
+  'איך אני יכול לחסוך כסף?',
+  'מה ההוצאה הגדולה ביותר שלי?',
+]
 
 export function InsightsPage({ appData }: { appData: AppData }) {
   const { config, monthData, saveConfig } = appData
   const [apiKey, setApiKey] = useState(config.claudeApiKey ?? '')
   const [savingKey, setSavingKey] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [insight, setInsight] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
 
   async function handleSaveKey() {
     setSavingKey(true)
@@ -64,11 +84,16 @@ export function InsightsPage({ appData }: { appData: AppData }) {
     setSavingKey(false)
   }
 
-  async function handleAnalyze() {
-    if (!config.claudeApiKey) return
-    setLoading(true)
+  async function sendMessage(text: string) {
+    if (!text.trim() || !config.claudeApiKey || !monthData) return
     setError(null)
-    setInsight(null)
+
+    const userMsg: Message = { role: 'user', content: text.trim() }
+    const newMessages = [...messages, userMsg]
+    setMessages(newMessages)
+    setInput('')
+    setLoading(true)
+
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -81,7 +106,8 @@ export function InsightsPage({ appData }: { appData: AppData }) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1500,
-          messages: [{ role: 'user', content: buildPrompt(appData) }],
+          system: buildSystemPrompt(appData),
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         }),
       })
       if (!res.ok) {
@@ -89,7 +115,8 @@ export function InsightsPage({ appData }: { appData: AppData }) {
         throw new Error(err.error?.message ?? `HTTP ${res.status}`)
       }
       const data = await res.json()
-      setInsight(data.content[0]?.text ?? '')
+      const reply = data.content[0]?.text ?? ''
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (e) {
       setError(String(e))
     } finally {
@@ -97,13 +124,22 @@ export function InsightsPage({ appData }: { appData: AppData }) {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage(input)
+    }
+  }
+
+  const canChat = !!config.claudeApiKey && !!monthData
+
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-slate-200 text-xl font-bold mb-6">✨ תובנות AI</h1>
+    <div className="max-w-3xl flex flex-col h-[calc(100vh-120px)]">
+      <h1 className="text-slate-200 text-xl font-bold mb-4">✨ שאל את ה-AI</h1>
 
       {/* API key setup */}
       {!config.claudeApiKey && (
-        <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5 mb-6">
+        <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5 mb-4">
           <p className="text-white text-sm mb-3">
             הזן את Claude API Key שלך. המפתח נשמר ב-Google Drive שלך בלבד.
           </p>
@@ -127,54 +163,108 @@ export function InsightsPage({ appData }: { appData: AppData }) {
       )}
 
       {config.claudeApiKey && (
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-3 flex items-center gap-3">
           <div className="text-green-400 text-sm">✓ API Key מוגדר</div>
           <button
             onClick={() => saveConfig({ ...config, claudeApiKey: '' })}
-            className="text-xs text-slate-600 hover:text-slate-400"
+            className="text-xs text-slate-600 hover:text-white"
           >
             שנה מפתח
           </button>
+          {messages.length > 0 && (
+            <button
+              onClick={() => setMessages([])}
+              className="text-xs text-slate-600 hover:text-white mr-auto"
+            >
+              נקה שיחה
+            </button>
+          )}
         </div>
       )}
 
-      {/* Analyze button */}
-      {monthData ? (
-        <button
-          onClick={handleAnalyze}
-          disabled={loading || !config.claudeApiKey}
-          className="mb-6 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2"
-        >
-          {loading ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              מנתח...
-            </>
-          ) : '✨ נתח את החודש'}
-        </button>
-      ) : (
-        <p className="text-white mb-6">טען חודש קודם כדי לנתח</p>
+      {!monthData && (
+        <p className="text-white mb-4">טען חודש כדי לשאול שאלות</p>
       )}
 
-      {/* Results */}
-      {error && (
-        <div className="p-4 bg-red-900/30 border border-red-700 text-red-300 rounded-xl text-sm mb-4">
-          שגיאה: {error}
-        </div>
-      )}
+      {/* Chat area */}
+      {canChat && (
+        <>
+          {/* Quick questions */}
+          {messages.length === 0 && (
+            <div className="mb-4">
+              <p className="text-slate-500 text-xs mb-2">שאלות מהירות:</p>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_QUESTIONS.map(q => (
+                  <button
+                    key={q}
+                    onClick={() => sendMessage(q)}
+                    className="text-xs bg-[#1a1d2e] border border-[#2d3148] text-white px-3 py-1.5 rounded-full hover:border-violet-500 transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {insight && (
-        <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-violet-400 font-semibold">ניתוח {monthData?.folder.name}</h2>
-            <span className="text-slate-600 text-xs">
-              {formatCurrency(computeSummary(monthData!.transactions).totalExpense)} סה״כ
-            </span>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-4 space-y-4 mb-4">
+            {messages.length === 0 && (
+              <p className="text-slate-600 text-sm text-center mt-8">
+                שאל אותי כל שאלה על ההוצאות של {monthData.folder.name}
+              </p>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
+                  m.role === 'user'
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-[#0f1117] text-slate-200 border border-[#2d3148]'
+                }`}>
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-end">
+                <div className="bg-[#0f1117] border border-[#2d3148] rounded-xl px-4 py-3">
+                  <span className="flex gap-1">
+                    <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
           </div>
-          <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
-            {insight}
+
+          {/* Error */}
+          {error && (
+            <div className="p-3 bg-red-900/30 border border-red-700 text-red-300 rounded-xl text-sm mb-3">
+              שגיאה: {error}
+            </div>
+          )}
+
+          {/* Input */}
+          <div className="flex gap-3">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="שאל שאלה על ההוצאות שלך... (Enter לשליחה)"
+              rows={2}
+              className="flex-1 bg-[#1a1d2e] border border-[#2d3148] text-slate-200 px-4 py-3 rounded-xl text-sm placeholder:text-slate-600 resize-none focus:border-violet-500 outline-none"
+            />
+            <button
+              onClick={() => sendMessage(input)}
+              disabled={loading || !input.trim()}
+              className="bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white px-5 rounded-xl font-medium"
+            >
+              ➤
+            </button>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
