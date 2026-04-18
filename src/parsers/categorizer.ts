@@ -69,6 +69,10 @@ const RULES: [RegExp, Category][] = [
   [/משכורת|salary|שכר/i, 'משכורת'],
   // חנייה — parking
   [/חניון|חנייה|parking/i, 'חנייה'],
+  // בית כללי — plants/home
+  [/בלוק.?ושתיל|nursery/i, 'בית כללי'],
+  // עמלות בנק — bank fees
+  [/עמלת.?פעולה|עמלת.?חשבון|דמי.?ניהול.*חשבון/i, 'עמלות בנק'],
 ]
 
 export function categorize(

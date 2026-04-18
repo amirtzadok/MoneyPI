@@ -116,8 +116,16 @@ export function OverviewPage({ appData }: { appData: AppData }) {
                 labelStyle={{ color: '#e2e8f0' }}
               />
               <Legend
+                onClick={(entry) => {
+                  const name = entry.value as string
+                  setSelectedCategory(prev => prev === name ? null : name)
+                }}
                 formatter={(value) => (
-                  <span style={{ color: selectedCategory && selectedCategory !== value ? '#4b5563' : '#94a3b8', fontSize: 12 }}>
+                  <span style={{
+                    color: selectedCategory && selectedCategory !== value ? '#4b5563' : '#94a3b8',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}>
                     {value}
                   </span>
                 )}
