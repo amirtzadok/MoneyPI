@@ -54,7 +54,7 @@ const RULES: [RegExp, Category][] = [
   // בית כללי
   [/אייקאה|IKEA|ACE|home center|הום סנטר|שיפוץ|קרמיקה|פרי.?טיוי|PET.?SALE|pet sale/i, 'בית כללי'],
   // מזון ותואלטיקה — family markets
-  [/פמילי.?מרקט|family.?market|י\.א\.פמילי/i, 'מזון ותואלטיקה'],
+  [/פמי?לי.?מרקט|family.?market|י\.א\.פמי?לי/i, 'מזון ותואלטיקה'],
   // אינטרנט — telecom
   [/טלראן|telran/i, 'אינטרנט'],
   // כללית — medical
