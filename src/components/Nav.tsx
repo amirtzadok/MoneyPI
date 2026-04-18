@@ -25,7 +25,7 @@ export function Nav({ active, onChange }: Props) {
           className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             active === tab.id
               ? 'bg-violet-600 text-white'
-              : 'text-slate-400 hover:text-slate-200'
+              : 'text-white hover:text-slate-200'
           }`}
         >
           {tab.label}

@@ -27,7 +27,7 @@ export function GoogleAuthButton() {
         <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
         <button
           onClick={logout}
-          className="text-sm text-slate-400 hover:text-slate-200"
+          className="text-sm text-white hover:text-slate-200"
         >
           התנתק
         </button>

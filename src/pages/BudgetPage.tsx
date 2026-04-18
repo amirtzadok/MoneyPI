@@ -57,9 +57,9 @@ export function BudgetPage({ appData }: { appData: AppData }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#2d3148]">
-              <th className="text-right p-3 text-slate-500 font-medium">קטגוריה</th>
-              <th className="text-right p-3 text-slate-500 font-medium">הוצאה החודש</th>
-              <th className="text-right p-3 text-slate-500 font-medium">תקציב חודשי (₪)</th>
+              <th className="text-right p-3 text-white font-medium">קטגוריה</th>
+              <th className="text-right p-3 text-white font-medium">הוצאה החודש</th>
+              <th className="text-right p-3 text-white font-medium">תקציב חודשי (₪)</th>
             </tr>
           </thead>
           <tbody>
@@ -71,7 +71,7 @@ export function BudgetPage({ appData }: { appData: AppData }) {
               return (
                 <tr key={cat} className="border-b border-[#141620] hover:bg-[#1e2135]">
                   <td className="p-3"><CategoryBadge category={cat} /></td>
-                  <td className="p-3 text-slate-400">
+                  <td className="p-3 text-white">
                     {spent > 0 ? (
                       <span className={pct !== null && pct >= 95 ? 'text-red-400' : pct !== null && pct >= 80 ? 'text-yellow-400' : 'text-slate-300'}>
                         {formatCurrency(spent)} {pct !== null ? `(${pct}%)` : ''}

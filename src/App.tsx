@@ -44,7 +44,7 @@ export default function App() {
             loading={appData.monthLoading}
           />
           <img src={user?.picture} className="w-7 h-7 rounded-full" alt="" />
-          <button onClick={logout} className="text-xs text-slate-500 hover:text-slate-300">התנתק</button>
+          <button onClick={logout} className="text-xs text-white hover:text-slate-300">התנתק</button>
         </div>
       </div>
 

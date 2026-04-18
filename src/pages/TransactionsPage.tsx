@@ -63,7 +63,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
   }
 
   if (!monthData) {
-    return <div className="text-slate-500 text-center mt-20">טען חודש כדי לראות עסקאות</div>
+    return <div className="text-white text-center mt-20">טען חודש כדי לראות עסקאות</div>
   }
 
   return (
@@ -74,7 +74,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Search */}
         <div className="mb-4">
-          <label className="text-slate-400 text-xs mb-1 block">חיפוש עסק</label>
+          <label className="text-white text-xs mb-1 block">חיפוש עסק</label>
           <input
             type="text"
             value={search}
@@ -86,7 +86,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Amount range */}
         <div className="mb-4">
-          <label className="text-slate-400 text-xs mb-1 block">טווח סכום (₪)</label>
+          <label className="text-white text-xs mb-1 block">טווח סכום (₪)</label>
           <div className="flex gap-2">
             <input
               type="number"
@@ -107,7 +107,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Payment types */}
         <div className="mb-4">
-          <label className="text-slate-400 text-xs mb-2 block">סוג תשלום</label>
+          <label className="text-white text-xs mb-2 block">סוג תשלום</label>
           <div className="flex flex-wrap gap-1">
             {Object.entries(PAYMENT_TYPE_LABELS).map(([pt, label]) => (
               <button
@@ -116,7 +116,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
                 className={`text-xs px-2 py-1 rounded-full border transition-colors ${
                   selectedPaymentTypes.includes(pt)
                     ? 'bg-violet-600 border-violet-600 text-white'
-                    : 'border-[#2d3148] text-slate-400 hover:border-violet-500'
+                    : 'border-[#2d3148] text-white hover:border-violet-500'
                 }`}
               >
                 {label}
@@ -127,7 +127,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Categories */}
         <div>
-          <label className="text-slate-400 text-xs mb-2 block">קטגוריה</label>
+          <label className="text-white text-xs mb-2 block">קטגוריה</label>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {[...CATEGORIES].map(cat => (
               <label key={cat} className="flex items-center gap-2 cursor-pointer">
@@ -137,7 +137,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
                   onChange={() => toggleCategory(cat)}
                   className="accent-violet-600"
                 />
-                <span className="text-slate-400 text-xs">{cat}</span>
+                <span className="text-white text-xs">{cat}</span>
               </label>
             ))}
           </div>
@@ -150,7 +150,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
               setSearch(''); setSelectedCategories([]); setSelectedPaymentTypes([])
               setMinAmount(''); setMaxAmount('')
             }}
-            className="mt-4 w-full text-xs text-slate-500 hover:text-slate-300 border border-[#2d3148] rounded-lg py-1.5"
+            className="mt-4 w-full text-xs text-white hover:text-slate-300 border border-[#2d3148] rounded-lg py-1.5"
           >
             נקה סינונים
           </button>
@@ -160,7 +160,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
       {/* Results */}
       <div className="flex-1">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-slate-400 text-sm">{filtered.length} עסקאות</span>
+          <span className="text-white text-sm">{filtered.length} עסקאות</span>
           <span className="text-red-400 font-bold">{formatCurrency(totalFiltered)}</span>
         </div>
 
@@ -168,19 +168,19 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#2d3148]">
-                <th className="text-right p-3 text-slate-500 font-medium">תאריך</th>
-                <th className="text-right p-3 text-slate-500 font-medium">עסק</th>
-                <th className="text-right p-3 text-slate-500 font-medium">קטגוריה</th>
-                <th className="text-right p-3 text-slate-500 font-medium">סוג</th>
-                <th className="text-right p-3 text-slate-500 font-medium">תשלומים</th>
-                <th className="text-right p-3 text-slate-500 font-medium">סכום</th>
-                <th className="text-right p-3 text-slate-500 font-medium">כרטיס</th>
+                <th className="text-right p-3 text-white font-medium">תאריך</th>
+                <th className="text-right p-3 text-white font-medium">עסק</th>
+                <th className="text-right p-3 text-white font-medium">קטגוריה</th>
+                <th className="text-right p-3 text-white font-medium">סוג</th>
+                <th className="text-right p-3 text-white font-medium">תשלומים</th>
+                <th className="text-right p-3 text-white font-medium">סכום</th>
+                <th className="text-right p-3 text-white font-medium">כרטיס</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(t => (
                 <tr key={t.id} className="border-b border-[#141620] hover:bg-[#1e2135]">
-                  <td className="p-3 text-slate-400 whitespace-nowrap">{formatDate(t.date)}</td>
+                  <td className="p-3 text-white whitespace-nowrap">{formatDate(t.date)}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
                       <span>{t.description}</span>
@@ -214,7 +214,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
                         </button>
                         <button
                           onClick={() => setCategorizingId(null)}
-                          className="text-xs text-slate-500 px-1"
+                          className="text-xs text-white px-1"
                         >
                           ✕
                         </button>

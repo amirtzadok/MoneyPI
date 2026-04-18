@@ -104,7 +104,7 @@ export function InsightsPage({ appData }: { appData: AppData }) {
       {/* API key setup */}
       {!config.claudeApiKey && (
         <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5 mb-6">
-          <p className="text-slate-400 text-sm mb-3">
+          <p className="text-white text-sm mb-3">
             הזן את Claude API Key שלך. המפתח נשמר ב-Google Drive שלך בלבד.
           </p>
           <div className="flex gap-3">
@@ -153,7 +153,7 @@ export function InsightsPage({ appData }: { appData: AppData }) {
           ) : '✨ נתח את החודש'}
         </button>
       ) : (
-        <p className="text-slate-500 mb-6">טען חודש קודם כדי לנתח</p>
+        <p className="text-white mb-6">טען חודש קודם כדי לנתח</p>
       )}
 
       {/* Results */}

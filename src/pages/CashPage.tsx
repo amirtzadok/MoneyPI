@@ -39,10 +39,10 @@ export function CashPage({ appData }: { appData: AppData }) {
 
       {/* Add form */}
       <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5 mb-6">
-        <h2 className="text-slate-400 text-sm font-medium mb-4">הוספת הוצאה</h2>
+        <h2 className="text-white text-sm font-medium mb-4">הוספת הוצאה</h2>
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">תאריך</label>
+            <label className="text-white text-xs mb-1 block">תאריך</label>
             <input
               type="date"
               value={date}
@@ -51,7 +51,7 @@ export function CashPage({ appData }: { appData: AppData }) {
             />
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">סכום (₪)</label>
+            <label className="text-white text-xs mb-1 block">סכום (₪)</label>
             <input
               type="number"
               value={amount}
@@ -61,7 +61,7 @@ export function CashPage({ appData }: { appData: AppData }) {
             />
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">קטגוריה</label>
+            <label className="text-white text-xs mb-1 block">קטגוריה</label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
@@ -73,7 +73,7 @@ export function CashPage({ appData }: { appData: AppData }) {
             </select>
           </div>
           <div>
-            <label className="text-slate-400 text-xs mb-1 block">הערה</label>
+            <label className="text-white text-xs mb-1 block">הערה</label>
             <input
               type="text"
               value={note}
@@ -96,14 +96,14 @@ export function CashPage({ appData }: { appData: AppData }) {
       {cashEntries.length > 0 ? (
         <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl overflow-hidden">
           <div className="flex justify-between items-center p-3 border-b border-[#2d3148]">
-            <span className="text-slate-400 text-sm">{cashEntries.length} רשומות</span>
+            <span className="text-white text-sm">{cashEntries.length} רשומות</span>
             <span className="text-red-400 font-bold">{formatCurrency(total)}</span>
           </div>
           <table className="w-full text-sm">
             <tbody>
               {[...cashEntries].sort((a, b) => b.date.localeCompare(a.date)).map(e => (
                 <tr key={e.id} className="border-b border-[#141620] hover:bg-[#1e2135]">
-                  <td className="p-3 text-slate-400">{formatDate(e.date)}</td>
+                  <td className="p-3 text-white">{formatDate(e.date)}</td>
                   <td className="p-3"><CategoryBadge category={e.category} /></td>
                   <td className="p-3 text-slate-300">{e.note || '—'}</td>
                   <td className="p-3 text-red-400 font-bold">{formatCurrency(e.amount)}</td>
@@ -121,7 +121,7 @@ export function CashPage({ appData }: { appData: AppData }) {
           </table>
         </div>
       ) : (
-        <p className="text-slate-500 text-center">אין רשומות עדיין</p>
+        <p className="text-white text-center">אין רשומות עדיין</p>
       )}
     </div>
   )
