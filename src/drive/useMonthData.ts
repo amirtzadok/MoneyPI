@@ -9,7 +9,7 @@ import type { Transaction } from '../parsers/types'
 import type { MonthFolder, MonthData, MerchantMappings } from './types'
 
 const EXPENSES_ROOT = 'Expenses'
-const YEAR_FOLDERS = ['Expenses 2025', 'Expenses 2026']
+const YEAR_FOLDERS = ['Expenses 2026']
 
 const MONTH_MAP: Record<string, number> = {
   january: 1, february: 2, march: 3, april: 4,
