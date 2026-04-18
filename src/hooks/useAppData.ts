@@ -38,13 +38,22 @@ export function useAppData() {
       setMappings(map)
       setCashEntries(cash)
       setFolders(fols)
-      if (fols.length > 0) setSelectedFolder(fols[fols.length - 1])
+      if (fols.length > 0) {
+        const lastFolder = fols[fols.length - 1]
+        setSelectedFolder(lastFolder)
+        try {
+          const data = await loadMonthData(lastFolder, map)
+          setMonthData(data)
+        } catch {
+          // non-fatal
+        }
+      }
       setInitialized(true)
     } catch (e) {
       setError(String(e))
       setInitialized(true)
     }
-  }, [ensureAppFolder, readConfig, readMappings, readCashEntries, listMonthFolders])
+  }, [ensureAppFolder, readConfig, readMappings, readCashEntries, listMonthFolders, loadMonthData])
 
   const loadMonth = useCallback(async (folder?: MonthFolder) => {
     const target = folder ?? selectedFolder

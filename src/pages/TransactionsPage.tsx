@@ -86,7 +86,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Amount range */}
         <div className="mb-4">
-          <label className="text-slate-500 text-xs mb-1 block">טווח סכום (₪)</label>
+          <label className="text-slate-400 text-xs mb-1 block">טווח סכום (₪)</label>
           <div className="flex gap-2">
             <input
               type="number"
@@ -107,7 +107,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Payment types */}
         <div className="mb-4">
-          <label className="text-slate-500 text-xs mb-2 block">סוג תשלום</label>
+          <label className="text-slate-400 text-xs mb-2 block">סוג תשלום</label>
           <div className="flex flex-wrap gap-1">
             {Object.entries(PAYMENT_TYPE_LABELS).map(([pt, label]) => (
               <button
@@ -127,7 +127,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
 
         {/* Categories */}
         <div>
-          <label className="text-slate-500 text-xs mb-2 block">קטגוריה</label>
+          <label className="text-slate-400 text-xs mb-2 block">קטגוריה</label>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {[...CATEGORIES].map(cat => (
               <label key={cat} className="flex items-center gap-2 cursor-pointer">
@@ -160,7 +160,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
       {/* Results */}
       <div className="flex-1">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-slate-500 text-sm">{filtered.length} עסקאות</span>
+          <span className="text-slate-400 text-sm">{filtered.length} עסקאות</span>
           <span className="text-red-400 font-bold">{formatCurrency(totalFiltered)}</span>
         </div>
 

@@ -16,9 +16,9 @@ interface SummaryCardProps {
 function SummaryCard({ label, value, sub, color = 'text-slate-200' }: SummaryCardProps) {
   return (
     <div className="bg-[#1a1d2e] border border-[#2d3148] rounded-xl p-5">
-      <p className="text-slate-500 text-sm mb-1">{label}</p>
+      <p className="text-slate-400 text-sm mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-slate-600 text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-slate-500 text-xs mt-1">{sub}</p>}
     </div>
   )
 }

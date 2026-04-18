@@ -153,7 +153,7 @@ export function InsightsPage({ appData }: { appData: AppData }) {
           ) : '✨ נתח את החודש'}
         </button>
       ) : (
-        <p className="text-slate-600 mb-6">טען חודש קודם כדי לנתח</p>
+        <p className="text-slate-500 mb-6">טען חודש קודם כדי לנתח</p>
       )}
 
       {/* Results */}
