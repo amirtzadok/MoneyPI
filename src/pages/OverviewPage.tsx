@@ -5,6 +5,7 @@ import { formatCurrency, CATEGORY_COLORS } from '../utils/formatters'
 import { CategoryBadge } from '../components/CategoryBadge'
 import type { useAppData } from '../hooks/useAppData'
 type AppData = ReturnType<typeof useAppData>
+type OverviewProps = { appData: AppData; onCategoryClick?: (cat: string) => void }
 
 interface SummaryCardProps {
   label: string
@@ -40,7 +41,7 @@ function BudgetBar({ category, spent, budget }: { category: string; spent: numbe
   )
 }
 
-export function OverviewPage({ appData }: { appData: AppData }) {
+export function OverviewPage({ appData, onCategoryClick }: OverviewProps) {
   const { monthData, config } = appData
 
   // Hooks MUST be called before any early returns
@@ -108,6 +109,8 @@ export function OverviewPage({ appData }: { appData: AppData }) {
                 outerRadius={110}
                 paddingAngle={2}
                 dataKey="value"
+                onClick={(entry) => entry?.name && onCategoryClick?.(entry.name)}
+                style={{ cursor: onCategoryClick ? 'pointer' : 'default' }}
               >
                 {pieData.map(entry => (
                   <Cell key={entry.name} fill={CATEGORY_COLORS[entry.name] ?? '#374151'} />

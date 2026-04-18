@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { filterTransactions } from '../utils/filters'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import { CategoryBadge } from '../components/CategoryBadge'
 import { CATEGORIES } from '../parsers/types'
+import type { Transaction } from '../parsers/types'
 import type { useAppData } from '../hooks/useAppData'
 type AppData = ReturnType<typeof useAppData>
 
@@ -14,7 +15,36 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
   cash: 'מזומן',
 }
 
-export function TransactionsPage({ appData }: { appData: AppData }) {
+const INSURANCE_CATEGORIES = CATEGORIES.filter(c => c.includes('ביטוח'))
+
+type SortCol = 'date' | 'description' | 'category' | 'paymentType' | 'installments' | 'amount' | 'cardNumber'
+type SortDir = 'asc' | 'desc'
+
+function sortTransactions(txs: Transaction[], col: SortCol, dir: SortDir): Transaction[] {
+  return [...txs].sort((a, b) => {
+    let cmp = 0
+    if (col === 'date') cmp = a.date.localeCompare(b.date)
+    else if (col === 'description') cmp = a.description.localeCompare(b.description)
+    else if (col === 'category') cmp = a.category.localeCompare(b.category)
+    else if (col === 'paymentType') cmp = a.paymentType.localeCompare(b.paymentType)
+    else if (col === 'amount') cmp = a.amount - b.amount
+    else if (col === 'cardNumber') cmp = a.cardNumber.localeCompare(b.cardNumber)
+    else if (col === 'installments') {
+      const ai = a.installments?.total ?? 0
+      const bi = b.installments?.total ?? 0
+      cmp = ai - bi
+    }
+    return dir === 'asc' ? cmp : -cmp
+  })
+}
+
+interface Props {
+  appData: AppData
+  forcedCategory?: string | null
+  onForcedCategoryConsumed?: () => void
+}
+
+export function TransactionsPage({ appData, forcedCategory, onForcedCategoryConsumed }: Props) {
   const { monthData, mappings, saveMappings } = appData
   const [search, setSearch] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -23,6 +53,19 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
   const [maxAmount, setMaxAmount] = useState<string>('')
   const [categorizingId, setCategorizingId] = useState<string | null>(null)
   const [categoryOverride, setCategoryOverride] = useState<string>('')
+  const [sortCol, setSortCol] = useState<SortCol>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  useEffect(() => {
+    if (forcedCategory) {
+      setSelectedCategories([forcedCategory])
+      setSearch('')
+      setSelectedPaymentTypes([])
+      setMinAmount('')
+      setMaxAmount('')
+      onForcedCategoryConsumed?.()
+    }
+  }, [forcedCategory]) // eslint-disable-line
 
   const allTransactions = useMemo(() => {
     if (!monthData) return []
@@ -37,10 +80,22 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
     maxAmount: maxAmount ? parseFloat(maxAmount) : null,
   }), [allTransactions, search, selectedCategories, selectedPaymentTypes, minAmount, maxAmount])
 
+  const sorted = useMemo(() => sortTransactions(filtered, sortCol, sortDir), [filtered, sortCol, sortDir])
+
   const totalFiltered = useMemo(() =>
     filtered.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0),
     [filtered]
   )
+
+  function handleSort(col: SortCol) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('desc') }
+  }
+
+  function SortArrow({ col }: { col: SortCol }) {
+    if (sortCol !== col) return <span className="text-slate-600 ml-1">↕</span>
+    return <span className="text-violet-400 ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+  }
 
   function toggleCategory(cat: string) {
     setSelectedCategories(prev =>
@@ -54,6 +109,15 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
     )
   }
 
+  function toggleInsurance() {
+    const allSelected = INSURANCE_CATEGORIES.every(c => selectedCategories.includes(c))
+    if (allSelected) {
+      setSelectedCategories(prev => prev.filter(c => !INSURANCE_CATEGORIES.includes(c as typeof INSURANCE_CATEGORIES[number])))
+    } else {
+      setSelectedCategories(prev => [...new Set([...prev, ...INSURANCE_CATEGORIES])])
+    }
+  }
+
   async function handleCategoryAssign(description: string) {
     if (!categoryOverride) return
     const updated = { ...mappings, [description]: categoryOverride }
@@ -62,8 +126,22 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
     setCategoryOverride('')
   }
 
+  const hasFilters = search || selectedCategories.length > 0 || selectedPaymentTypes.length > 0 || minAmount || maxAmount
+  const insuranceActive = INSURANCE_CATEGORIES.every(c => selectedCategories.includes(c))
+
   if (!monthData) {
     return <div className="text-white text-center mt-20">טען חודש כדי לראות עסקאות</div>
+  }
+
+  function Th({ col, label }: { col: SortCol; label: string }) {
+    return (
+      <th
+        className="text-right p-3 text-white font-medium cursor-pointer hover:text-violet-300 select-none"
+        onClick={() => handleSort(col)}
+      >
+        {label}<SortArrow col={col} />
+      </th>
+    )
   }
 
   return (
@@ -125,6 +203,21 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
           </div>
         </div>
 
+        {/* Quick filters */}
+        <div className="mb-4">
+          <label className="text-white text-xs mb-2 block">סינון מהיר</label>
+          <button
+            onClick={toggleInsurance}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors w-full text-right ${
+              insuranceActive
+                ? 'bg-blue-600 border-blue-600 text-white'
+                : 'border-[#2d3148] text-white hover:border-blue-500'
+            }`}
+          >
+            🛡️ כל הביטוחים
+          </button>
+        </div>
+
         {/* Categories */}
         <div>
           <label className="text-white text-xs mb-2 block">קטגוריה</label>
@@ -144,7 +237,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
         </div>
 
         {/* Clear filters */}
-        {(search || selectedCategories.length > 0 || selectedPaymentTypes.length > 0 || minAmount || maxAmount) && (
+        {hasFilters && (
           <button
             onClick={() => {
               setSearch(''); setSelectedCategories([]); setSelectedPaymentTypes([])
@@ -160,7 +253,7 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
       {/* Results */}
       <div className="flex-1">
         <div className="flex justify-between items-center mb-3">
-          <span className="text-white text-sm">{filtered.length} עסקאות</span>
+          <span className="text-white text-sm">{sorted.length} עסקאות</span>
           <span className="text-red-400 font-bold">{formatCurrency(totalFiltered)}</span>
         </div>
 
@@ -168,17 +261,17 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#2d3148]">
-                <th className="text-right p-3 text-white font-medium">תאריך</th>
-                <th className="text-right p-3 text-white font-medium">עסק</th>
-                <th className="text-right p-3 text-white font-medium">קטגוריה</th>
-                <th className="text-right p-3 text-white font-medium">סוג</th>
-                <th className="text-right p-3 text-white font-medium">תשלומים</th>
-                <th className="text-right p-3 text-white font-medium">סכום</th>
-                <th className="text-right p-3 text-white font-medium">כרטיס</th>
+                <Th col="date" label="תאריך" />
+                <Th col="description" label="עסק" />
+                <Th col="category" label="קטגוריה" />
+                <Th col="paymentType" label="סוג" />
+                <Th col="installments" label="תשלומים" />
+                <Th col="amount" label="סכום" />
+                <Th col="cardNumber" label="כרטיס" />
               </tr>
             </thead>
             <tbody>
-              {filtered.map(t => (
+              {sorted.map(t => (
                 <tr key={t.id} className="border-b border-[#141620] hover:bg-[#1e2135]">
                   <td className="p-3 text-white whitespace-nowrap">{formatDate(t.date)}</td>
                   <td className="p-3">
@@ -193,7 +286,6 @@ export function TransactionsPage({ appData }: { appData: AppData }) {
                         </button>
                       )}
                     </div>
-                    {/* Category assignment modal inline */}
                     {categorizingId === t.id && (
                       <div className="mt-2 flex gap-2">
                         <select
