@@ -142,6 +142,8 @@ Config files (root Expenses/ folder): `config.json`, `mappings.json`, `cash-entr
 | בני אחמד סלאמה לגז | גז |
 | בלוק ושתיל | בית כללי |
 | עמלת פעולה | עמלות בנק |
+| אינטלאלקטורנ-י | משכורת |
+| מקס איט פיננ-י | **EXCLUDED** — credit card billing (already in card files, skip in leumiHtmlParser) |
 
 ---
 

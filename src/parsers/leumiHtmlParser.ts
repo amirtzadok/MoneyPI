@@ -42,6 +42,8 @@ export function parseLeumiHtml(
     const creditStr = cells[5]
 
     if (!dateStr || !description) continue
+    // Credit card billing rows — already captured from card files, skip to avoid double-counting
+    if (/מקס.?איט.?פיננ|לאומי.?ויזה|כרטיסי.?אשראי/i.test(description)) continue
 
     const debit = parseAmount(debitStr)
     const credit = parseAmount(creditStr)
